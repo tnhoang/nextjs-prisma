@@ -1,4 +1,4 @@
-import { prisma } from "./../../server/db/client";
+import { prisma } from "../../../server/db/client";
 import { PrismaClient } from "@prisma/client";
 
 import type { NextApiRequest, NextApiResponse } from "next";

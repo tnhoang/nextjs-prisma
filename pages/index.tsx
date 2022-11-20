@@ -2,7 +2,9 @@ import { NextPage } from 'next'
 import { prisma } from '../server/db/client'
 import { useEffect, useState } from 'react'
 import axios from 'axios';
-
+import { Box, Button, CloseButton, Flex, Heading } from '@chakra-ui/react'
+import { Input, Textarea } from '@chakra-ui/react'
+import { Form, Formik } from 'formik';
 type PostProps = {
   id: number;
   title: string;
@@ -15,40 +17,75 @@ type Props = {
 }
 
 const Home: NextPage<Props> = (props) => {
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
   const [posts, setPosts] = useState<PostProps[]>([])
-
 
   useEffect(() => {
     setPosts(props.posts)
   }, [props.posts])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const res = await axios.post('/api/posts', { title, content })
-    setPosts([...posts, res.data])
+  const handleDeletePost = async (id: number) => {
+    const res = await axios.delete(`/api/posts/${id}`)
+    if (res.status == 200) {
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== id))
+    }
   }
-
-
   return (
-    <div>
-      <h1>Home</h1>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxWidth: "400px" }}>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea value={content} onChange={(e) => setContent(e.target.value)} />
-        <button type="submit">Submit</button>
-      </form>
-      {
-        posts.map((post) => (
-          <div key={post.id}>
-            <h2>{post.title}</h2>
-            <p>{post.content} </p>
-          </div>
-        ))
-      }
-    </div >
+    <Flex
+      direction="column"
+      align="center"
+      height="100vh"
+      gap="2"
+    >
+      <Formik
+        initialValues={{
+          title: '',
+          content: '',
+        }}
+        onSubmit={async ({ title, content }, { resetForm }) => {
+          const res = await axios.post('/api/posts', { title, content })
+          setPosts([...posts, res.data])
+          resetForm({
+            values: {
+              title: '',
+              content: ''
+            }
+          })
 
+        }}>
+        {({ isSubmitting, values, getFieldProps }) => (
+          <Form>
+            <Input
+              id='title'
+              margin="1"
+              placeholder="Title"
+              autoComplete="off"
+              {...getFieldProps('title')}
+            />
+            <Textarea
+              id='content'
+              margin="1"
+              placeholder="Type your content..."
+              {...getFieldProps('content')}
+            />
+            <Button width="100%" colorScheme='messenger' type="submit" isLoading={isSubmitting}>Submit</Button>
+          </Form>
+        )}
+      </Formik>
+      <Box alignContent="left" width="100%">
+        {
+          posts.map((post) => (
+            <Flex key={post.id} justifyContent="space-between">
+              <div>
+                <Heading>{post.title}</Heading>
+                <p onDoubleClick={() => console.log("double lcick!")}>{post.content} </p>
+              </div>
+
+              <CloseButton onClick={() => handleDeletePost(post.id)} />
+            </Flex>
+          ))
+        }
+      </Box>
+    </Flex >
   )
 }
 
